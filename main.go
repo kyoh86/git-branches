@@ -66,9 +66,9 @@ func main() {
 			upstream = "=> " + upstream
 		}
 		write([]string{
-			colorAuthor(authors[branch.Commit]),
 			colorRemote(branch.Remote),
 			branch.Name,
+			colorAuthor(authors[branch.Commit]),
 			upstream,
 		})
 	}
