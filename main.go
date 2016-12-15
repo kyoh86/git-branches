@@ -245,7 +245,11 @@ func columnWriter(io.Writer) (write func([]string), close func()) {
 	c.UseCRLF = false
 
 	return func(field []string) {
-			c.Write(field)
+			escaped := make([]string, 0, len(field))
+			for _, f := range field {
+				escaped = append(escaped, strings.Replace(f, " ", "_", -1))
+			}
+			c.Write(escaped)
 		}, func() {
 			c.Flush()
 			w.Flush()
