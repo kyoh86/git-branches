@@ -123,7 +123,7 @@ func (b Branch) FullName() string {
 func retrieveBranchList(currentDir *string) ([]Branch, []string, error) {
 	output, err := callGit([]string{"branch", "--list", "--all", "-vv"}, currentDir)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to call git-branch")
+		return nil, nil, errors.Wrap(err, "call git-branch")
 	}
 
 	commitMap := map[string]struct{}{}
@@ -155,7 +155,7 @@ func retrieveBranchList(currentDir *string) ([]Branch, []string, error) {
 		branches = append(branches, *branch)
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse git-branch output")
+		return nil, nil, errors.Wrap(err, "parse git-branch output")
 	}
 	return branches, commits, nil
 }
@@ -164,7 +164,7 @@ func retrieveCommitAuthors(commits []string, currentDir *string) (map[string]str
 	//HACK: 表示する情報をan(authors' name)ではなくae(authors' email)も選べるようにする
 	output, err := callGit(append([]string{"show", "--format=%h:%an", "--no-patch"}, commits...), currentDir)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to call git-show")
+		return nil, errors.Wrap(err, "call git-show")
 	}
 
 	authors := map[string]string{}
@@ -176,7 +176,7 @@ func retrieveCommitAuthors(commits []string, currentDir *string) (map[string]str
 		authors[terms[0]] = terms[1]
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to parse git-show output")
+		return nil, errors.Wrap(err, "parse git-show output")
 	}
 	return authors, nil
 }
@@ -197,6 +197,9 @@ func callGit(args []string, currentDir *string) ([]byte, error) {
 func parseBranchText(line int, text string) (*Branch, error) {
 	var current bool
 	cursor, row := text[:2], text[2:]
+	if strings.HasPrefix(row, "(") { // through like a (HEAD detached at xxxxxxx)
+		return nil, nil
+	}
 	fields := strings.Fields(row)
 	if len(fields) < 3 {
 		return nil, errors.New("shortage of fields (<3)")
