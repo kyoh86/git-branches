@@ -21,7 +21,9 @@ type arguments struct {
 	//TODO: support JSON format, pretty template style
 
 	ExcludeCurrent bool    `short:"X" long:"exclude-current" description:"Exclude current branch"`
-	WorkingDir     *string `short:"W" long:"working-dir" description:"Run as if git was started in <path> instead of the current working directory."`
+	Directory      *string `short:"C" long:"directory" description:"Run as if git was started in <path> instead of the current working directory."`
+	Remotes        bool    `short:"r" long:"remotes" description:"List the remote-tracking branches."`
+	All            bool    `short:"a" long:"all" description:"List both remote-tracking branches and local branches."`
 	Color          bool    `long:"color" description:"Output with ANSI colors."`
 }
 
@@ -41,12 +43,12 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to parse argument")
 	}
 
-	branches, commits, err := retrieveBranchList(args.WorkingDir)
+	branches, commits, err := retrieveBranchList(args.Directory, args.All, args.Remotes)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to get branch list")
 	}
 
-	authors, err := retrieveCommitAuthors(commits, args.WorkingDir)
+	authors, err := retrieveCommitAuthors(commits, args.Directory)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to get commit-author list")
 	}
@@ -120,8 +122,15 @@ func (b Branch) FullName() string {
 	return b.Remote + "/" + b.Name
 }
 
-func retrieveBranchList(currentDir *string) ([]Branch, []string, error) {
-	output, err := callGit([]string{"branch", "--list", "--all", "-vv"}, currentDir)
+func retrieveBranchList(currentDir *string, all, remotes bool) ([]Branch, []string, error) {
+	params := []string{"branch", "--list", "-vv"}
+	if all == true {
+		params = append(params, "--all")
+	}
+	if remotes == true {
+		params = append(params, "--remotes")
+	}
+	output, err := callGit(params, currentDir)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "call git-branch")
 	}
