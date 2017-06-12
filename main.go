@@ -13,7 +13,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	flags "github.com/jessevdk/go-flags"
-	"github.com/kyoh86/git-branches/log"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 )
@@ -33,7 +32,8 @@ const (
 )
 
 func main() {
-	log.InitLogger()
+	logrus.SetOutput(os.Stderr)
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 
 	var args arguments
 	_, err := flags.Parse(&args)
