@@ -1,0 +1,37 @@
+memo = "06443b06b7bdaa00dc06d96fa90bf570e109cdf71f149347f4e6891b95cf06a7"
+
+[[projects]]
+  name = "github.com/jessevdk/go-flags"
+  packages = ["."]
+  revision = "96dc06278ce32a0e9d957d590bb987c81ee66407"
+  version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/logrusorgru/aurora"
+  packages = ["."]
+  revision = "b9c3722b64a1976e0624448ee7f5a0744b8cf629"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "c605e284fe17294bda444b34710735b29d1a9d90"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "89742aefa4b206dcf400792f3bd35b542998eb3b"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "81e90905daefcd6fd217b62423c0908922eadb30"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15"

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/Sirupsen/logrus"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type arguments struct {
