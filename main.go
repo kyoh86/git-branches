@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/csv"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -18,20 +17,10 @@ import (
 )
 
 type arguments struct {
-	//TODO: support JSON format, pretty template style
-
 	ExcludeCurrent bool    `short:"X" long:"exclude-current" description:"Exclude current branch"`
 	Directory      *string `short:"C" long:"directory" description:"Run as if git was started in <path> instead of the current working directory."`
-	Remotes        bool    `short:"r" long:"remotes" description:"List the remote-tracking branches."`
-	All            bool    `short:"a" long:"all" description:"List both remote-tracking branches and local branches."`
 	Color          bool    `long:"color" description:"Output with ANSI colors."`
 }
-
-const (
-	remotesPrefix = "remotes/"
-	currentCursor = "* "
-	headCommit    = "->"
-)
 
 func main() {
 	logrus.SetOutput(os.Stderr)
@@ -43,14 +32,9 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to parse argument")
 	}
 
-	branches, commits, err := retrieveBranchList(args.Directory, args.All, args.Remotes)
+	branches, err := retrieveBranchList(args.Directory)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to get branch list")
-	}
-
-	authors, err := retrieveCommitAuthors(commits, args.Directory)
-	if err != nil {
-		logrus.WithError(err).Fatal("Failed to get commit-author list")
 	}
 
 	write, close := columnWriter(os.Stdout)
@@ -62,15 +46,14 @@ func main() {
 		if args.ExcludeCurrent && branch.Current {
 			continue
 		}
-		//HACK: 項目の並び替え、有無を選択できるようにする
 		upstream := branch.Upstream
 		if upstream != "" {
-			upstream = "=> " + upstream
+			upstream = "=>" + upstream
 		}
 		write([]string{
 			colorRemote(branch.Remote),
 			branch.Name,
-			colorAuthor(authors[branch.Commit]),
+			colorAuthor(branch.Committer),
 			upstream,
 		})
 	}
@@ -107,11 +90,11 @@ func colorAuthorFunc(color bool) func(string) string {
 
 // Branch contains information of a branch
 type Branch struct {
-	Current  bool
-	Remote   string
-	Name     string
-	Commit   string
-	Upstream string
+	Current   bool
+	Remote    string
+	Name      string
+	Upstream  string
+	Committer string
 }
 
 // FullName gets path of the origin and name
@@ -122,34 +105,37 @@ func (b Branch) FullName() string {
 	return b.Remote + "/" + b.Name
 }
 
-func retrieveBranchList(currentDir *string, all, remotes bool) ([]Branch, []string, error) {
-	params := []string{"branch", "--list", "-vv"}
-	if all == true {
-		params = append(params, "--all")
-	}
-	if remotes == true {
-		params = append(params, "--remotes")
-	}
+func retrieveBranchList(currentDir *string) ([]Branch, error) {
+	params := []string{"for-each-ref", "--format='%(if:notequals=refs/tags)%(refname:rstrip=-2)%(then)%(if:notequals=HEAD)%(refname:lstrip=3)%(then)%(HEAD)%09%(refname:lstrip=2)%09%(authorname)%09%(if)%(upstream)%(then)%(upstream:lstrip=2)%(else)%(end)%09%(committerdate:format-local:%Y/%m/%d %H:%M:%S)%(end)%(end)'" /*, "--sort", "-committerdate"*/}
 	output, err := callGit(params, currentDir)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "call git-branch")
+		return nil, errors.Wrap(err, "call git-branch")
 	}
 
-	commitMap := map[string]struct{}{}
-	commits := []string{}
 	branches := []Branch{}
 	followees := map[string]struct{}{}
 	scanner := bufio.NewScanner(bytes.NewReader(output))
 	for line := 0; scanner.Scan(); line++ {
 		text := scanner.Text()
-		branch, err := parseBranchText(line, text)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, fmt.Sprintf("failed to parse branch text at line %d (%s)", line, text))
-		}
-		if branch == nil {
+		// HEAD?, name, committer, upstream, time
+		fields := strings.Split(text, "\t")
+		if len(fields) < 5 {
 			continue
 		}
 
+		branch := &Branch{
+			Current:   fields[0] == "*",
+			Committer: fields[2],
+			Upstream:  fields[3],
+		}
+
+		names := strings.SplitN(fields[1], "/", 2)
+		if len(names) == 2 {
+			branch.Remote = names[0]
+			branch.Name = names[1]
+		} else {
+			branch.Name = names[0]
+		}
 		if branch.Upstream != "" {
 			followees[branch.Upstream] = struct{}{}
 		}
@@ -157,37 +143,12 @@ func retrieveBranchList(currentDir *string, all, remotes bool) ([]Branch, []stri
 			logrus.WithField("branch", *branch).Debug("ignore followed branch")
 			continue
 		}
-		if _, ok := commitMap[branch.Commit]; !ok {
-			commitMap[branch.Commit] = struct{}{}
-			commits = append(commits, branch.Commit)
-		}
 		branches = append(branches, *branch)
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, errors.Wrap(err, "parse git-branch output")
+		return nil, errors.Wrap(err, "parse git-branch output")
 	}
-	return branches, commits, nil
-}
-
-func retrieveCommitAuthors(commits []string, currentDir *string) (map[string]string, error) {
-	//HACK: 表示する情報をan(authors' name)ではなくae(authors' email)も選べるようにする
-	output, err := callGit(append([]string{"show", "--format=%h:%an", "--no-patch"}, commits...), currentDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "call git-show")
-	}
-
-	authors := map[string]string{}
-	scanner := bufio.NewScanner(bytes.NewReader(output))
-	for line := 0; scanner.Scan(); line++ {
-		text := scanner.Text()
-		terms := strings.SplitN(text, ":", 2)
-		logrus.WithField("commit", terms[0]).WithField("author", terms[1]).Debug("found commit info")
-		authors[terms[0]] = terms[1]
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, errors.Wrap(err, "parse git-show output")
-	}
-	return authors, nil
+	return branches, nil
 }
 
 func callGit(args []string, currentDir *string) ([]byte, error) {
@@ -201,52 +162,6 @@ func callGit(args []string, currentDir *string) ([]byte, error) {
 	}
 	logrus.WithField("output", string(output)).Debug("git responded")
 	return output, err
-}
-
-func parseBranchText(line int, text string) (*Branch, error) {
-	var current bool
-	cursor, row := text[:2], text[2:]
-	if strings.HasPrefix(row, "(") { // through like a (HEAD detached at xxxxxxx)
-		return nil, nil
-	}
-	fields := strings.Fields(row)
-	if len(fields) < 3 {
-		return nil, errors.New("shortage of fields (<3)")
-	}
-	name, commit, upstream := fields[0], fields[1], fields[2]
-
-	if commit == headCommit {
-		logrus.WithField("headCommit", headCommit).Debug("ignore HEAD link branch")
-		return nil, nil
-	}
-
-	if strings.HasPrefix(upstream, "[") &&
-		(strings.HasSuffix(upstream, ":") ||
-			strings.HasSuffix(upstream, "]")) {
-		upstream = upstream[1 : len(upstream)-1]
-	} else {
-		upstream = ""
-	}
-
-	if cursor == currentCursor {
-		current = true
-	}
-
-	var remote string
-	if strings.HasPrefix(name, remotesPrefix) {
-		name = name[len(remotesPrefix):]
-		paths := strings.SplitN(name, "/", 2)
-
-		remote, name = paths[0], paths[1]
-		upstream = ""
-	}
-	return &Branch{
-		Current:  current,
-		Remote:   remote,
-		Name:     name,
-		Commit:   commit,
-		Upstream: upstream,
-	}, nil
 }
 
 func columnWriter(io.Writer) (write func([]string), close func()) {
