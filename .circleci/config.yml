@@ -7,6 +7,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: go get
+          command: "go get ./..."
+      - run:
           name: go test
           command: "go test -race ./..."
   cover:
