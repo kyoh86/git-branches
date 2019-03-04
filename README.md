@@ -4,6 +4,8 @@
 [![CircleCI](https://img.shields.io/circleci/project/github/kyoh86/git-branches.svg)](https://circleci.com/gh/kyoh86/git-branches)
 [![Coverage Status](https://img.shields.io/codecov/c/github/kyoh86/git-branches.svg)](https://codecov.io/gh/kyoh86/git-branches)
 
+Show each branch, upstream, author in git repository.
+
 ## Install
 
 ```
@@ -16,9 +18,8 @@ go get github.com/kyoh86/git-branches
 git-branches --help
 ```
 
-## License
+# LICENSE
 
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)](http://www.opensource.org/licenses/MIT)
 
 This is distributed under the [MIT License](http://www.opensource.org/licenses/MIT).
-
