@@ -176,7 +176,9 @@ func columnWriter(io.Writer) (write func([]string), close func()) {
 			for _, f := range field {
 				escaped = append(escaped, strings.Replace(f, " ", "_", -1))
 			}
-			c.Write(escaped)
+			if err := c.Write(escaped); err != nil {
+				panic(err)
+			}
 		}, func() {
 			c.Flush()
 			w.Flush()
