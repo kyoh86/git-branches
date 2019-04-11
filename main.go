@@ -10,27 +10,28 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	flags "github.com/jessevdk/go-flags"
+	"github.com/alecthomas/kingpin"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-type arguments struct {
-	ExcludeCurrent bool    `short:"X" long:"exclude-current" description:"Exclude current branch"`
-	Directory      *string `short:"C" long:"directory" description:"Run as if git was started in <path> instead of the current working directory."`
-	Color          bool    `long:"color" description:"Output with ANSI colors."`
-}
-
 func main() {
 	logrus.SetOutput(os.Stderr)
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 
-	var args arguments
-	_, err := flags.Parse(&args)
-	if err != nil {
-		logrus.WithError(err).Fatal("Failed to parse argument")
+	var args struct {
+		ExcludeCurrent bool   `short:"X" long:"exclude-current" description:"Exclude current branch"`
+		Directory      string `short:"C" long:"directory" description:"Run as if git was started in <path> instead of the current working directory."`
+		Color          bool   `long:"color" description:"Output with ANSI colors."`
 	}
+
+	app := kingpin.New("git-branches", "Show each branch, upstream, author in git repository.")
+	app.Flag("exclude-current", "Exclude current branch").Short('X').BoolVar(&args.ExcludeCurrent)
+	app.Flag("directory", "Run as if git was started in <path> instead of the current working directory.").Short('C').StringVar(&args.Directory)
+	app.Flag("color", "Output with ANSI colors.").BoolVar(&args.Color)
+
+	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	branches, err := retrieveBranchList(args.Directory)
 	if err != nil {
@@ -105,7 +106,7 @@ func (b Branch) FullName() string {
 	return b.Remote + "/" + b.Name
 }
 
-func retrieveBranchList(currentDir *string) ([]Branch, error) {
+func retrieveBranchList(currentDir string) ([]Branch, error) {
 	params := []string{"for-each-ref", "--format", "%(if:notequals=refs/tags)%(refname:rstrip=-2)%(then)%(if:notequals=HEAD)%(refname:lstrip=3)%(then)%(HEAD)%09%(refname:lstrip=2)%09%(authorname)%09%(if)%(upstream)%(then)%(upstream:lstrip=2)%(else)%(end)%09%(committerdate:format-local:%Y/%m/%d %H:%M:%S)%(end)%(end)" /*, "--sort", "-committerdate"*/}
 	output, err := callGit(params, currentDir)
 	if err != nil {
@@ -151,9 +152,9 @@ func retrieveBranchList(currentDir *string) ([]Branch, error) {
 	return branches, nil
 }
 
-func callGit(args []string, currentDir *string) ([]byte, error) {
-	if currentDir != nil {
-		args = append([]string{"-C", *currentDir}, args...)
+func callGit(args []string, currentDir string) ([]byte, error) {
+	if currentDir != "" {
+		args = append([]string{"-C", currentDir}, args...)
 	}
 	logrus.WithField("args", strings.Join(args, " ")).Debug("git-args")
 	output, err := exec.Command("git", args...).Output()
