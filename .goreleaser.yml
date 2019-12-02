@@ -3,8 +3,8 @@ release:
   github:
     owner: kyoh86
     name: git-branches
-brew:
-  install: |
+brews:
+- install: |
     bin.install "git-branches"
     man1.install "git-branches.1"
   github:
@@ -12,7 +12,7 @@ brew:
     name: homebrew-tap
   folder: Formula
   homepage: https://github.com/kyoh86/git-branches
-  description: Show each branch, upstream, author in git repository.
+  description: Show each branch, upstream, author in git repository
 builds:
 - goos:
   - linux
@@ -26,8 +26,12 @@ builds:
   binary: git-branches
   hooks:
     pre: make man
-archive:
+archives:
+- id: gzip
   format: tar.gz
+  format_overrides:
+    - goos: windows
+      format: zip
   name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
   files:
   - licence*
