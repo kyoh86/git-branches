@@ -107,7 +107,20 @@ func (b Branch) FullName() string {
 }
 
 func retrieveBranchList(currentDir string) ([]Branch, error) {
-	params := []string{"for-each-ref", "--format", "%(if:notequals=refs/tags)%(refname:rstrip=-2)%(then)%(if:notequals=HEAD)%(refname:lstrip=3)%(then)%(HEAD)%09%(refname:lstrip=2)%09%(authorname)%09%(if)%(upstream)%(then)%(upstream:lstrip=2)%(else)%(end)%09%(committerdate:format-local:%Y/%m/%d %H:%M:%S)%(end)%(end)" /*, "--sort", "-committerdate"*/}
+	params := []string{"for-each-ref", "--format",
+		strings.Join([]string{
+			/**/ "%(if:notequals=refs/stash)%(refname:rstrip=-2)%(then)",
+			/*  */ "%(if:notequals=refs/tags)%(refname:rstrip=-2)%(then)",
+			/*    */ "%(if:notequals=HEAD)%(refname:lstrip=3)%(then)",
+			/*      */ "%(HEAD)%09%(refname:lstrip=2)%09%(authorname)%09",
+			/*      */ "%(if)%(upstream)%(then)",
+			/*        */ "%(upstream:lstrip=2)",
+			/*      */ "%(end)",
+			/*      */ "%09%(committerdate:format-local:%Y/%m/%d %H:%M:%S)",
+			/*    */ "%(end)",
+			/*  */ "%(end)",
+			/**/ "%(end)",
+		}, "")}
 	output, err := callGit(params, currentDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "call git-branch")
