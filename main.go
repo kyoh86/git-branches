@@ -51,7 +51,7 @@ func main() {
 		if upstream != "" {
 			upstream = "=>" + upstream
 			if !branch.UpstreamIsLiving {
-				upstream += " (is dead)"
+				upstream += "(DEAD)"
 			}
 		}
 		write([]string{
@@ -127,14 +127,14 @@ func retrieveBranchListParams() []string {
 		}, "")}
 }
 
-func retrieveBranchList(currentDir string) ([]Branch, error) {
+func retrieveBranchList(currentDir string) ([]*Branch, error) {
 	params := retrieveBranchListParams()
 	output, err := callGit(params, currentDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "call git-branch")
 	}
 
-	branches := []Branch{}
+	branches := []*Branch{}
 	followees := map[string]*Branch{}
 	scanner := bufio.NewScanner(bytes.NewReader(output))
 	for line := 0; scanner.Scan(); line++ {
@@ -166,7 +166,7 @@ func retrieveBranchList(currentDir string) ([]Branch, error) {
 			follower.UpstreamIsLiving = true
 			continue
 		}
-		branches = append(branches, *branch)
+		branches = append(branches, branch)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, errors.Wrap(err, "parse git-branch output")
