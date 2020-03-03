@@ -50,6 +50,9 @@ func main() {
 		upstream := branch.Upstream
 		if upstream != "" {
 			upstream = "=>" + upstream
+			if !branch.UpstreamIsLiving {
+				upstream += " (is dead)"
+			}
 		}
 		write([]string{
 			colorRemote(branch.Remote),
@@ -91,11 +94,12 @@ func colorAuthorFunc(color bool) func(string) string {
 
 // Branch contains information of a branch
 type Branch struct {
-	Current   bool
-	Remote    string
-	Name      string
-	Upstream  string
-	Committer string
+	Current          bool
+	Remote           string
+	Name             string
+	Upstream         string
+	UpstreamIsLiving bool
+	Committer        string
 }
 
 // FullName gets path of the origin and name
@@ -106,8 +110,8 @@ func (b Branch) FullName() string {
 	return b.Remote + "/" + b.Name
 }
 
-func retrieveBranchList(currentDir string) ([]Branch, error) {
-	params := []string{"for-each-ref", "--format",
+func retrieveBranchListParams() []string {
+	return []string{"for-each-ref", "--format",
 		strings.Join([]string{
 			/**/ "%(if:notequals=refs/stash)%(refname:rstrip=-2)%(then)",
 			/*  */ "%(if:notequals=refs/tags)%(refname:rstrip=-2)%(then)",
@@ -121,13 +125,17 @@ func retrieveBranchList(currentDir string) ([]Branch, error) {
 			/*  */ "%(end)",
 			/**/ "%(end)",
 		}, "")}
+}
+
+func retrieveBranchList(currentDir string) ([]Branch, error) {
+	params := retrieveBranchListParams()
 	output, err := callGit(params, currentDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "call git-branch")
 	}
 
 	branches := []Branch{}
-	followees := map[string]struct{}{}
+	followees := map[string]*Branch{}
 	scanner := bufio.NewScanner(bytes.NewReader(output))
 	for line := 0; scanner.Scan(); line++ {
 		text := scanner.Text()
@@ -151,10 +159,11 @@ func retrieveBranchList(currentDir string) ([]Branch, error) {
 			branch.Name = names[0]
 		}
 		if branch.Upstream != "" {
-			followees[branch.Upstream] = struct{}{}
+			followees[branch.Upstream] = branch
 		}
-		if _, ok := followees[branch.FullName()]; ok {
+		if follower, ok := followees[branch.FullName()]; ok {
 			logrus.WithField("branch", *branch).Debug("ignore followed branch")
+			follower.UpstreamIsLiving = true
 			continue
 		}
 		branches = append(branches, *branch)
