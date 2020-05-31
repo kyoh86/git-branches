@@ -51,7 +51,7 @@ func main() {
 		if upstream != "" {
 			upstream = "=>" + upstream
 			if !branch.UpstreamIsLiving {
-				upstream += "(DEAD)"
+				branch.Remote = "(DEAD)"
 			}
 		}
 		write([]string{
@@ -66,10 +66,14 @@ func main() {
 func colorRemoteFunc(color bool) func(string) string {
 	if color {
 		return func(s string) string {
-			if s == "" {
+			switch s {
+			case "":
 				return aurora.Blue("local").String()
+			case "(DEAD)":
+				return aurora.Gray(s).String()
+			default:
+				return aurora.Red(s).String()
 			}
-			return aurora.Red(s).String()
 		}
 	}
 	return func(s string) string {
