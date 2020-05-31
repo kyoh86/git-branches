@@ -21,15 +21,17 @@ func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 
 	var args struct {
-		ExcludeCurrent bool   `short:"X" long:"exclude-current" description:"Exclude current branch"`
-		Directory      string `short:"C" long:"directory" description:"Run as if git was started in <path> instead of the current working directory."`
-		Color          bool   `long:"color" description:"Output with ANSI colors."`
+		ExcludeCurrent bool
+		Directory      string
+		Color          bool
+		DeadOnly       bool
 	}
 
 	app := kingpin.New("git-branches", "Show each branch, upstream, author in git repository.")
 	app.Flag("exclude-current", "Exclude current branch").Short('X').BoolVar(&args.ExcludeCurrent)
 	app.Flag("directory", "Run as if git was started in <path> instead of the current working directory.").Short('C').StringVar(&args.Directory)
 	app.Flag("color", "Output with ANSI colors.").BoolVar(&args.Color)
+	app.Flag("dead-only", "Show dead branches only.").Short('D').BoolVar(&args.Color)
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -50,7 +52,11 @@ func main() {
 		upstream := branch.Upstream
 		if upstream != "" {
 			upstream = "=>" + upstream
-			if !branch.UpstreamIsLiving {
+			if branch.UpstreamIsLiving {
+				if args.DeadOnly {
+					continue
+				}
+			} else {
 				branch.Remote = "DEAD"
 			}
 		}
