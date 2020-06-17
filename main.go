@@ -51,7 +51,7 @@ func main() {
 		}
 		upstream := branch.Upstream
 		if upstream != "" {
-			upstream = "=>" + upstream
+			upstream = "=> " + upstream
 			if branch.UpstreamIsLiving {
 				if args.DeadOnly {
 					continue
@@ -207,7 +207,7 @@ func columnWriter(io.Writer) (write func([]string), close func()) {
 	return func(field []string) {
 			escaped := make([]string, 0, len(field))
 			for _, f := range field {
-				escaped = append(escaped, strings.Replace(f, " ", "_", -1))
+				escaped = append(escaped, strings.Replace(f, "\t", "_", -1))
 			}
 			if err := c.Write(escaped); err != nil {
 				panic(err)
