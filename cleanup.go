@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/kyoh86/ask"
@@ -19,15 +17,12 @@ func cleanup(directory string, force bool) error {
 		if branch.Living {
 			continue
 		}
-		{
-			var stderr bytes.Buffer
-			if err := callGit([]string{"branch", "-d", branch.Name}, directory, func(cmd *exec.Cmd) {
-				cmd.Stderr = &stderr
-			}); err != nil {
-				errMsg := stderr.String()
-				if !strings.Contains(errMsg, "If you are sure you want to delete it, run 'git branch -D") {
-					return fmt.Errorf("calling git -d: %s", errMsg)
-				}
+
+		stderr, err := callGitWithStderr([]string{"branch", "-d", branch.Name}, directory)
+		if err != nil {
+			errMsg := string(stderr)
+			if !strings.Contains(errMsg, "If you are sure you want to delete it, run 'git branch -D") {
+				return fmt.Errorf("calling git -d: %s", errMsg)
 			}
 		}
 
@@ -43,11 +38,9 @@ func cleanup(directory string, force bool) error {
 		}
 
 		if yes {
-			var stderr bytes.Buffer
-			if err := callGit([]string{"branch", "-D", branch.Name}, directory, func(cmd *exec.Cmd) {
-				cmd.Stderr = &stderr
-			}); err != nil {
-				return fmt.Errorf("calling git -D: %s", stderr.String())
+			stderr, err := callGitWithStderr([]string{"branch", "-D", branch.Name}, directory)
+			if err != nil {
+				return fmt.Errorf("calling git -D: %s", string(stderr))
 			}
 		}
 	}

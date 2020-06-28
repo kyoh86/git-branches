@@ -8,9 +8,25 @@ import (
 	"strings"
 )
 
-func callGit(args []string, currentDir string, cmdWrap ...func(*exec.Cmd)) error {
-	if currentDir != "" {
-		args = append([]string{"-C", currentDir}, args...)
+func callGitWithStdout(args []string, workingDir string) ([]byte, error) {
+	var stdout bytes.Buffer
+	err := callGit(args, workingDir, func(cmd *exec.Cmd) {
+		cmd.Stdout = &stdout
+	})
+	return stdout.Bytes(), err
+}
+
+func callGitWithStderr(args []string, workingDir string) ([]byte, error) {
+	var stderr bytes.Buffer
+	err := callGit(args, workingDir, func(cmd *exec.Cmd) {
+		cmd.Stderr = &stderr
+	})
+	return stderr.Bytes(), err
+}
+
+func callGit(args []string, workingDir string, cmdWrap ...func(*exec.Cmd)) error {
+	if workingDir != "" {
+		args = append([]string{"-C", workingDir}, args...)
 	}
 	cmd := exec.Command("git", args...)
 	for _, w := range cmdWrap {
@@ -36,19 +52,16 @@ func retrieveBranchListParams() []string {
 		}, "")}
 }
 
-func retrieveBranchList(currentDir string) ([]*Branch, error) {
+func retrieveBranchList(workingDir string) ([]*Branch, error) {
 	params := retrieveBranchListParams()
-	var output bytes.Buffer
-	err := callGit(params, currentDir, func(cmd *exec.Cmd) {
-		cmd.Stdout = &output
-	})
+	stdout , err := callGitWithStdout(params, workingDir)
 	if err != nil {
 		return nil, fmt.Errorf("call git-branch: %w", err)
 	}
 
 	branches := []*Branch{}
 	followees := map[string]*Branch{}
-	scanner := bufio.NewScanner(bytes.NewReader(output.Bytes()))
+	scanner := bufio.NewScanner(bytes.NewReader(stdout))
 	for line := 0; scanner.Scan(); line++ {
 		text := scanner.Text()
 		// HEAD?, name, committer, upstream, time
