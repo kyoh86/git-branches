@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-func callGit(args []string, currentDir string) ([]byte, error) {
+func callGit(args []string, currentDir string, cmdWrap ...func(*exec.Cmd)) error {
 	if currentDir != "" {
 		args = append([]string{"-C", currentDir}, args...)
 	}
-	output, err := exec.Command("git", args...).Output()
-	if err != nil {
-		return nil, err
+	cmd := exec.Command("git", args...)
+	for _, w := range cmdWrap {
+		w(cmd)
 	}
-	return output, err
+	return cmd.Run()
 }
 
 func retrieveBranchListParams() []string {
@@ -38,14 +38,17 @@ func retrieveBranchListParams() []string {
 
 func retrieveBranchList(currentDir string) ([]*Branch, error) {
 	params := retrieveBranchListParams()
-	output, err := callGit(params, currentDir)
+	var output bytes.Buffer
+	err := callGit(params, currentDir, func(cmd *exec.Cmd) {
+		cmd.Stdout = &output
+	})
 	if err != nil {
 		return nil, fmt.Errorf("call git-branch: %w", err)
 	}
 
 	branches := []*Branch{}
 	followees := map[string]*Branch{}
-	scanner := bufio.NewScanner(bytes.NewReader(output))
+	scanner := bufio.NewScanner(bytes.NewReader(output.Bytes()))
 	for line := 0; scanner.Scan(); line++ {
 		text := scanner.Text()
 		// HEAD?, name, committer, upstream, time
