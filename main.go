@@ -20,7 +20,7 @@ func main() {
 	app.Flag("directory", "Run as if git was started in <path> instead of the current working directory.").Short('C').StringVar(&directory)
 
 	listCmd := app.Command("list", "Show each branch, upstream, author in git repository").Default()
-	listCmd.Flag("color", "Output with ANSI colors").BoolVar(&color)
+	listCmd.Flag("color", "Output with ANSI colors").Default("true").BoolVar(&color)
 	listCmd.Arg("filter", "Filter").EnumsVar(&filters, filterNames...)
 
 	cleanupCmd := app.Command("cleanup", "Cleanup dead (lost upstream) branch")
