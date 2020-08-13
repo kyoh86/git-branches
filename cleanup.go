@@ -14,6 +14,9 @@ func cleanup(directory string, force bool) error {
 		return fmt.Errorf("get branch list: %w", err)
 	}
 	for _, branch := range branches {
+		if branch.Upstream == "" {
+			continue
+		}
 		if branch.Living {
 			continue
 		}
