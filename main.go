@@ -1,10 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/alecthomas/kingpin"
+)
+
+var (
+	version = "snapshot"
+	commit  = "snapshot"
+	date    = "snapshot"
 )
 
 func main() {
@@ -18,6 +25,7 @@ func main() {
 
 	app := kingpin.New("git-branches", "Manage branches with interfaces")
 	app.Flag("directory", "Run as if git was started in <path> instead of the current working directory.").Short('C').StringVar(&directory)
+	app.Version(fmt.Sprintf("%s-%s (%s)", version, commit, date))
 
 	listCmd := app.Command("list", "Show each branch, upstream, author in git repository").Default()
 	listCmd.Flag("color", "Output with ANSI colors").Default("true").BoolVar(&color)
