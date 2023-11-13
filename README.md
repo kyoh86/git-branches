@@ -13,7 +13,7 @@ Show all branches with upstream and author.
 ## Install
 
 ```
-go get github.com/kyoh86/git-branches
+go install github.com/kyoh86/git-branches@latest
 ```
 
 ## Usage
