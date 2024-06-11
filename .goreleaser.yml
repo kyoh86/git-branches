@@ -21,10 +21,10 @@ brews:
   - install: |
       bin.install "git-branches"
       man1.install Dir.glob('git-branches*.1')
-    tap:
+    repository:
       owner: kyoh86
       name: homebrew-tap
-    folder: Formula
+    directory: Formula
     homepage: https://github.com/kyoh86/git-branches
     description: Show each branch, upstream, author in git repository
     license: MIT
