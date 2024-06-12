@@ -36,7 +36,3 @@ func Run(app *kingpin.Application) {
 		}
 	}
 }
-
-func main() {
-	Run(kingpin.New("git-branches", "Manage branches with interfaces"))
-}
