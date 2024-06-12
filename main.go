@@ -14,7 +14,7 @@ var (
 	date    = "snapshot"
 )
 
-func main() {
+func Run(app *kingpin.Application) {
 	var (
 		directory string
 		color     bool
@@ -23,7 +23,6 @@ func main() {
 		force   bool
 	)
 
-	app := kingpin.New("git-branches", "Manage branches with interfaces")
 	app.Flag("directory", "Run as if git was started in <path> instead of the current working directory.").Short('C').StringVar(&directory)
 	app.Version(fmt.Sprintf("%s-%s (%s)", version, commit, date))
 
@@ -44,4 +43,8 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+func main() {
+	Run(kingpin.New("git-branches", "Manage branches with interfaces"))
 }
