@@ -1,4 +1,4 @@
-package main
+package gitbranches
 
 type Filter func(*Branch) bool
 

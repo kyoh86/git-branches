@@ -1,4 +1,4 @@
-package main
+package gitbranches
 
 // Branch contains information of a branch
 type Branch struct {

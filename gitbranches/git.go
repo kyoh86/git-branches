@@ -1,4 +1,4 @@
-package main
+package gitbranches
 
 import (
 	"bufio"
@@ -54,7 +54,7 @@ func retrieveBranchListParams() []string {
 
 func retrieveBranchList(workingDir string) ([]*Branch, error) {
 	params := retrieveBranchListParams()
-	stdout , err := callGitWithStdout(params, workingDir)
+	stdout, err := callGitWithStdout(params, workingDir)
 	if err != nil {
 		return nil, fmt.Errorf("call git-branch: %w", err)
 	}
