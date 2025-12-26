@@ -73,7 +73,7 @@ func formatRemoteFunc(color bool) func(*Branch) string {
 }
 
 func formatAuthorFunc(color bool) func(*Branch) string {
-	//HACK: 自分かどうかで色分け
+	// HACK: 自分かどうかで色分け
 	if color {
 		return func(b *Branch) string {
 			return aec.GreenF.Apply(b.Committer)
@@ -94,7 +94,7 @@ func columnWriter(io.Writer) (write func([]string), close func()) {
 	return func(field []string) {
 			escaped := make([]string, 0, len(field))
 			for _, f := range field {
-				escaped = append(escaped, strings.Replace(f, "\t", "_", -1))
+				escaped = append(escaped, strings.ReplaceAll(f, "\t", "_"))
 			}
 			if err := c.Write(escaped); err != nil {
 				panic(err)
